@@ -1,0 +1,25 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@2.0
+  kubernetes: circleci/kubernetes@1.3
+
+jobs:
+  build-and-deploy:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout
+      - setup_remote_docker
+      - aws-cli/setup
+      - kubernetes/create-or-update-resource:
+          resource-name: node-app-deployment
+          resource-file: k8s/deployment.yaml
+          resource-type: deployment
+          get-rollout-status: true
+          watch-rollout-status: true
+
+workflows:
+  build-and-deploy:
+    jobs:
+      - build-and-deploy
