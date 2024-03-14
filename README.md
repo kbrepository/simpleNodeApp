@@ -17,18 +17,17 @@ Before you begin, ensure you have the following installed on your machine:
 
 2. Navigate to the project directory:
 
-cd simpleNodeApp/
+> cd simpleNodeApp/
 
 
 3. Build the Docker image:
 
-docker build -t node-app .
+> docker build -t <image_tag> .
 
 
 4. Run the Docker container:
 
-docker run -p 3000:3000 simple-ui-app
-
+> docker run -d -p 3000:3000 <image_tag>
 
 
 5. Access the application in your web browser at [http://localhost:3000]
