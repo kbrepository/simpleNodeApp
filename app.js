@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const PORT = 3000;
+const PORT = 3006;
 
 // Define a route to serve the HTML page
 app.get('/', (req, res) => {
