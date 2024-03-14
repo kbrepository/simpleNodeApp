@@ -1,0 +1,41 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_IMAGE: kbya2005/node-app
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      
+    - name: Build Docker Image
+      run: docker build -t ${{ env.DOCKER_IMAGE }}:${{ github.sha }} .
+      
+    - name: Push Docker Image
+      run: |
+        docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+        docker push ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+        
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      
+    - name: Deploy to Kubernetes
+      env:
+        KUBECONFIG: ${{ secrets.KUBECONFIG }}
+      run: |
+        kubectl apply -f k8s/
+        kubectl set image deployment/node-app-deployment node-app=${{ env.DOCKER_IMAGE }}:${{ github.sha }}
