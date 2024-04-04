@@ -1,0 +1,22 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 14.x
+  pre_build:
+    commands:
+      - echo "Installing dependencies..."
+      - npm install
+  build:
+    commands:
+      - echo "Building application..."
+      - npm run build
+  post_build:
+    commands:
+      - echo "Packaging artifact..."
+      - aws s3 cp --recursive --exclude "*" --include "*.js" --include "package.json" --include "node_modules/**/*" dist s3://<your-s3-bucket-name>/simpleNodeApp.zip
+artifacts:
+  base-directory: dist
+  files:
+    - '**/*'
