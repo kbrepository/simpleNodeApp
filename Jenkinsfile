@@ -2,36 +2,57 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "kbya2005/node-app"
-        KUBECONFIG = credentials('kubeconfig')
+        // SonarCloud variables
+        SONAR_URL = 'https://sonarcloud.io/'
+        SONAR_ORG = 'devsecops1-kb'
+        SONAR_PROJECTKEY = 'devsecops1-kb'
+        SONAR_LOGIN = '6388cfceaadf0f5725a5921b0d8dffb0f4648d53'
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                checkout([$class: 'GitSCM',
+                    branches: [[name: '*/devsecopsPipeline']],
+                    userRemoteConfigs: [[url: 'https://github.com/kbrepository/simpleNodeApp.git']]
+                ])
+            }
+        }
         stage('Build') {
             steps {
                 script {
-                    docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}", '.')
+                    sh 'mvn install'
                 }
             }
         }
-
-        stage('Push') {
+        stage('Test') {
             steps {
                 script {
-                    docker.withRegistry('', 'docker-credentials') {
-                        docker.image("${DOCKER_IMAGE}:${env.BUILD_NUMBER}").push()
+                    sh 'mvn test'
+                }
+            }
+        }
+        stage('SonarQube analysis') {
+            steps {
+                withSonarQubeEnv('SonarCloud') {
+                    script {
+                        sh """
+                            mvn sonar:sonar \
+                            -Dsonar.host.url=${env.SONAR_URL} \
+                            -Dsonar.organization=${env.SONAR_ORG} \
+                            -Dsonar.projectKey=${env.SONAR_PROJECTKEY} \
+                            -Dsonar.login=${env.SONAR_LOGIN}
+                        """
                     }
                 }
             }
         }
-
-        stage('Deploy') {
-            steps {
-                script {
-                    sh "envsubst < k8s/deployment.yaml | kubectl apply -f -"
-                    sh "kubectl set image deployment/node-app-deployment node-app=${DOCKER_IMAGE}:${env.BUILD_NUMBER}"
-                }
-            }
+    }
+    
+    post {
+        always {
+            junit '**/target/surefire-reports/*.xml' // Publish test results
+            cleanWs() // Clean workspace after build
         }
     }
 }
